@@ -18,7 +18,7 @@ export const userMenuItems = [
   },
   {
     name: "Admin Dashboard",
-    to: routes.AdminRoute.to,
+    to: routes.AdminDashboardRoute.to,
     icon: Shield,
     isAuthRequired: false,
     isAdminOnly: true,

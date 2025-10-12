@@ -12,7 +12,7 @@ const Breadcrumb = ({ pageName }: BreadcrumbProps) => {
       <nav>
         <ul className="flex items-center gap-1">
           <li>
-            <WaspRouterLink to={routes.AdminRoute.to}>Dashboard</WaspRouterLink>
+            <WaspRouterLink to={routes.AdminDashboardRoute.to}>Dashboard</WaspRouterLink>
           </li>
           <li>/</li>
           <li className="font-medium">{pageName}</li>

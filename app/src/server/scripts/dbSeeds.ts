@@ -33,16 +33,26 @@ function generateMockUserData(): MockUserData {
     ]);
   const now = new Date();
   const createdAt = faker.date.past({ refDate: now });
+  const updatedAt = faker.date.between({ from: createdAt, to: now });
   const timePaid = faker.date.between({ from: createdAt, to: now });
   const credits = subscriptionStatus
     ? 0
     : faker.number.int({ min: 0, max: 10 });
   const hasUserPaidOnStripe = !!subscriptionStatus || credits > 3;
+  
   return {
     email: faker.internet.email({ firstName, lastName }),
     username: faker.internet.userName({ firstName, lastName }),
     createdAt,
+    updatedAt,                    // ADDED
+    organizationId: null,          // ADDED
+    role: 'USER',                  // ADDED
     isAdmin: false,
+    hasCompletedOnboarding: true,  // ADDED
+    invitedById: null,             // ADDED
+    invitationToken: null,         // ADDED
+    invitationExpiresAt: null,     // ADDED
+    phoneNumber: null,             // ADDED
     credits,
     subscriptionStatus,
     lemonSqueezyCustomerPortalUrl: null,
