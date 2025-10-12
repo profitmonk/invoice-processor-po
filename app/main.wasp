@@ -192,6 +192,24 @@ page ApprovalsPage {
   component: import ApprovalsPage from "@src/purchaseOrder/pages/ApprovalsPage"
 }
 
+route CreateManualInvoiceRoute { path: "/invoices/new", to: CreateManualInvoicePage }
+page CreateManualInvoicePage {
+  authRequired: true,
+  component: import CreateManualInvoicePage from "@src/invoice/pages/CreateManualInvoicePage"
+}
+
+route ManualInvoicesRoute { path: "/invoices/manual", to: ManualInvoicesPage }
+page ManualInvoicesPage {
+  authRequired: true,
+  component: import ManualInvoicesPage from "@src/invoice/pages/ManualInvoicesPage"
+}
+
+route ManualInvoiceDetailRoute { path: "/invoices/manual/:id", to: ManualInvoiceDetailPage }
+page ManualInvoiceDetailPage {
+  authRequired: true,
+  component: import ManualInvoiceDetailPage from "@src/invoice/pages/ManualInvoiceDetailPage"
+}
+
 action generateGptResponse {
   fn: import { generateGptResponse } from "@src/demo-ai-app/operations",
   entities: [User, Task, GptResponse]
@@ -397,6 +415,45 @@ action deleteInvoice {
 action buyCredits {
   fn: import { buyCredits } from "@src/invoice/operations/buyCredits",
   entities: [User]
+}
+
+// ============================================
+// MANUAL INVOICE OPERATIONS (for PO matching)
+// ============================================
+
+action createManualInvoice {
+  fn: import { createManualInvoice } from "@src/invoice/operations/poInvoiceOperations",
+  entities: [Invoice, InvoiceLineItem, PurchaseOrder, Notification]
+}
+
+action updateManualInvoice {
+  fn: import { updateManualInvoice } from "@src/invoice/operations/poInvoiceOperations",
+  entities: [Invoice, InvoiceLineItem]
+}
+
+action markInvoicePaid {
+  fn: import { markInvoicePaid } from "@src/invoice/operations/poInvoiceOperations",
+  entities: [Invoice, Notification]
+}
+
+action deleteManualInvoice {
+  fn: import { deleteManualInvoice } from "@src/invoice/operations/poInvoiceOperations",
+  entities: [Invoice, InvoiceLineItem, PurchaseOrder]
+}
+
+query getApprovedPOsWithoutInvoices {
+  fn: import { getApprovedPOsWithoutInvoices } from "@src/invoice/operations/poInvoiceOperations",
+  entities: [Invoice, PurchaseOrder, User, ExpenseType, POLineItem, Property, GLAccount]
+}
+
+query getManualInvoices {
+  fn: import { getManualInvoices } from "@src/invoice/operations/poInvoiceOperations",
+  entities: [Invoice, InvoiceLineItem]
+}
+
+query getInvoiceById {
+  fn: import { getInvoiceById } from "@src/invoice/operations/poInvoiceOperations",
+  entities: [Invoice, InvoiceLineItem, PurchaseOrder]
 }
 
 // ============================================

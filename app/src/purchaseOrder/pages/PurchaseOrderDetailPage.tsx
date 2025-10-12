@@ -461,7 +461,7 @@ export default function PurchaseOrderDetailPage() {
                   <Button
                     variant="outline"
                     className="w-full"
-                    onClick={() => navigate(`/invoices/${purchaseOrder.linkedInvoice.id}`)}
+                    onClick={() => navigate(`/invoices/manual/${purchaseOrder.linkedInvoice.id}`)}
                   >
                     <FileText className="h-4 w-4 mr-2" />
                     View Invoice

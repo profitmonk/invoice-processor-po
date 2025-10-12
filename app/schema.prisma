@@ -358,42 +358,44 @@ enum NotificationType {
 // EXISTING INVOICE MODELS (UPDATED)
 // ============================================
 
-model Invoice {
-  id                String          @id @default(uuid())
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+model Invoice { 
+  id                  String          @id @default(uuid())
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
   
-  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId            String
+  user                User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId              String
+ 
+  fileName            String
+  fileSize            Int
+  fileUrl             String
+  mimeType            String
+
+  status              InvoiceStatus   @default(UPLOADED)
   
-  fileName          String
-  fileSize          Int
-  fileUrl           String
-  mimeType          String
+  ocrText             String?         @db.Text
+  ocrConfidence       Float?  
+  ocrProcessedAt      DateTime?
   
-  status            InvoiceStatus   @default(UPLOADED)
+  structuredData      Json?   
+  llmProcessedAt      DateTime?
   
-  ocrText           String?         @db.Text
-  ocrConfidence     Float?
-  ocrProcessedAt    DateTime?
-  
-  structuredData    Json?
-  llmProcessedAt    DateTime?
-  
-  vendorName        String?
-  invoiceNumber     String?
-  invoiceDate       DateTime?
-  totalAmount       Float?
-  currency          String?         @default("USD")
-  
+  vendorName          String? 
+  invoiceNumber       String? 
+  invoiceDate         DateTime?
+  totalAmount         Float?
+  currency            String?         @default("USD")
+
+  // FIX: Add the foreign key and proper relation
+  //purchaseOrderId     String?
   linkedPurchaseOrder PurchaseOrder?
-  
-  errorMessage      String?         @db.Text
-  failedAt          DateTime?
-  
-  lineItems         InvoiceLineItem[]
-  processingJob     ProcessingJob?
-  
+
+  errorMessage        String?         @db.Text
+  failedAt            DateTime?
+
+  lineItems           InvoiceLineItem[]
+  processingJob       ProcessingJob?
+
   @@index([userId])
   @@index([status])
   @@index([createdAt])

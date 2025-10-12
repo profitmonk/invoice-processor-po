@@ -48,6 +48,11 @@ const navigationItems = [
   },
   {
     name: 'Invoices',
+    href: '/invoices/manual',  // Changed to manual invoices
+    icon: FileText,
+  },
+  {
+    name: 'OCR Invoices',
     href: '/invoices',
     icon: FileText,
   },

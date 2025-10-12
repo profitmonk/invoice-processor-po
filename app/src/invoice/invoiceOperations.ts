@@ -56,7 +56,7 @@ export const createInvoice = async (
   }
 
   // If linked to PO, validate it
-  let purchaseOrder = null;
+  let purchaseOrder: any = null;
   if (purchaseOrderId) {
     purchaseOrder = await context.entities.PurchaseOrder.findUnique({
       where: { id: purchaseOrderId },
@@ -126,7 +126,7 @@ export const createInvoice = async (
   });
 
   // If linked to PO, update PO status
-  if (purchaseOrderId) {
+  if (purchaseOrderId && purchaseOrder) {
     await context.entities.PurchaseOrder.update({
       where: { id: purchaseOrderId },
       data: {
