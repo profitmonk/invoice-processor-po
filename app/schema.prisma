@@ -354,6 +354,12 @@ enum NotificationType {
   ROLE_CHANGED
 }
 
+enum InvoiceEntryType {
+  OCR
+  MANUAL
+  OCR_CORRECTED
+}
+
 // ============================================
 // EXISTING INVOICE MODELS (UPDATED)
 // ============================================
@@ -372,6 +378,7 @@ model Invoice {
   mimeType            String
 
   status              InvoiceStatus   @default(UPLOADED)
+  entryType           InvoiceEntryType @default(MANUAL)
   
   ocrText             String?         @db.Text
   ocrConfidence       Float?  

@@ -14,6 +14,9 @@ CREATE TYPE "ApprovalStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED', 'SKIPPE
 CREATE TYPE "NotificationType" AS ENUM ('PO_APPROVAL_NEEDED', 'PO_APPROVED', 'PO_REJECTED', 'PO_CANCELLED', 'INVOICE_PO_MISMATCH', 'USER_INVITED', 'ROLE_CHANGED');
 
 -- CreateEnum
+CREATE TYPE "InvoiceEntryType" AS ENUM ('OCR', 'MANUAL', 'OCR_CORRECTED');
+
+-- CreateEnum
 CREATE TYPE "InvoiceStatus" AS ENUM ('UPLOADED', 'PAYMENT_REQUIRED', 'QUEUED', 'PROCESSING_OCR', 'PROCESSING_LLM', 'COMPLETED', 'FAILED');
 
 -- CreateEnum
@@ -207,6 +210,7 @@ CREATE TABLE "Invoice" (
     "fileUrl" TEXT NOT NULL,
     "mimeType" TEXT NOT NULL,
     "status" "InvoiceStatus" NOT NULL DEFAULT 'UPLOADED',
+    "entryType" "InvoiceEntryType" NOT NULL DEFAULT 'MANUAL',
     "ocrText" TEXT,
     "ocrConfidence" DOUBLE PRECISION,
     "ocrProcessedAt" TIMESTAMP(3),

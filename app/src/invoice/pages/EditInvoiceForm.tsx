@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import InvoiceFileUpload from '../components/InvoiceFileUpload';
-import { uploadToGCS } from '../utils/fileUpload'; // We'll create this next
+import { useNavigate } from 'react-router-dom';
 import {
   useQuery,
-  createManualInvoice,
+  updateInvoice,
   getApprovedPOsWithoutInvoices,
   getProperties,
   getGLAccounts,
@@ -30,7 +28,7 @@ import {
   TableRow,
 } from '../../components/ui/table';
 import { Alert, AlertDescription } from '../../components/ui/alert';
-import { Plus, Trash2, Save, ArrowLeft } from 'lucide-react';
+import { Plus, Trash2, Save, X } from 'lucide-react';
 
 interface LineItem {
   id: string;
@@ -42,70 +40,61 @@ interface LineItem {
   taxAmount: number;
 }
 
-export default function CreateManualInvoicePage() {
+interface EditInvoiceFormProps {
+  invoice: any;
+  onSave: () => void;
+  onCancel: () => void;
+}
+
+export default function EditInvoiceForm({ invoice, onSave, onCancel }: EditInvoiceFormProps) {
   const navigate = useNavigate();
-  const location = useLocation();
-  const searchParams = new URLSearchParams(location.search);
-  const poId = searchParams.get('poId');
 
   const { data: approvedPOs } = useQuery(getApprovedPOsWithoutInvoices);
   const { data: properties } = useQuery(getProperties);
   const { data: glAccounts } = useQuery(getGLAccounts);
 
-  const [purchaseOrderId, setPurchaseOrderId] = useState<string>(poId || 'none');
-  const [invoiceNumber, setInvoiceNumber] = useState('');
-  const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split('T')[0]);
-  const [dueDate, setDueDate] = useState('');
-  const [vendor, setVendor] = useState('');
-  const [description, setDescription] = useState('');
-  const [lineItems, setLineItems] = useState<LineItem[]>([
-    {
-      id: crypto.randomUUID(),
-      description: '',
-      propertyId: '',
-      glAccountId: '',
-      quantity: 1,
-      unitPrice: 0,
-      taxAmount: 0,
-    },
-  ]);
+  const structuredData = (invoice.structuredData as any) || {};
+
+  const [purchaseOrderId, setPurchaseOrderId] = useState<string>(
+    invoice.linkedPurchaseOrder?.id || 'none'
+  );
+  const [invoiceNumber, setInvoiceNumber] = useState(invoice.invoiceNumber || '');
+  const [invoiceDate, setInvoiceDate] = useState(
+    invoice.invoiceDate ? new Date(invoice.invoiceDate).toISOString().split('T')[0] : ''
+  );
+  const [dueDate, setDueDate] = useState(
+    structuredData.dueDate ? new Date(structuredData.dueDate).toISOString().split('T')[0] : ''
+  );
+  const [vendor, setVendor] = useState(invoice.vendorName || '');
+  const [description, setDescription] = useState(structuredData.description || '');
+  
+  const [lineItems, setLineItems] = useState<LineItem[]>(() => {
+    if (invoice.lineItems && invoice.lineItems.length > 0) {
+      return invoice.lineItems.map((item: any) => ({
+        id: item.id || crypto.randomUUID(),
+        description: item.description || '',
+        propertyId: item.propertyId || '',
+        glAccountId: item.glAccountId || '',
+        quantity: item.quantity || 1,
+        unitPrice: item.unitPrice || 0,
+        taxAmount: item.taxAmount || 0,
+      }));
+    }
+    return [
+      {
+        id: crypto.randomUUID(),
+        description: '',
+        propertyId: '',
+        glAccountId: '',
+        quantity: 1,
+        unitPrice: 0,
+        taxAmount: 0,
+      },
+    ];
+  });
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
-  const [uploadError, setUploadError] = useState<string>('');
-  const [uploadedFileData, setUploadedFileData] = useState<{
-    fileName: string;
-    fileSize: number;
-    fileUrl: string;
-    mimeType: string;
-  } | null>(null);
-
-  // Pre-fill from PO if selected
-  useEffect(() => {
-    if (!approvedPOs || !purchaseOrderId || purchaseOrderId === 'none') {
-      return;
-    }
-    
-    const po = approvedPOs.find((p: any) => p.id === purchaseOrderId);
-    if (po) {
-      setVendor(po.vendor || '');
-      setDescription(po.description || '');
-      if (po.lineItems && Array.isArray(po.lineItems) && po.lineItems.length > 0) {
-        setLineItems(
-          po.lineItems.map((item: any) => ({
-            id: crypto.randomUUID(),
-            description: item.description || '',
-            propertyId: item.propertyId || '',
-            glAccountId: item.glAccountId || '',
-            quantity: item.quantity || 1,
-            unitPrice: item.unitPrice || 0,
-            taxAmount: 0,
-          }))
-        );
-      }
-    }
-  }, [purchaseOrderId, approvedPOs]);
 
   const addLineItem = () => {
     setLineItems([
@@ -165,32 +154,14 @@ export default function CreateManualInvoicePage() {
       return false;
     }
 
-    if (!dueDate) {
-      setMessage({ type: 'error', text: 'Due date is required' });
-      return false;
-    }
-
     if (!vendor.trim()) {
       setMessage({ type: 'error', text: 'Vendor is required' });
-      return false;
-    }
-
-    if (!description.trim()) {
-      setMessage({ type: 'error', text: 'Description is required' });
       return false;
     }
 
     for (const item of lineItems) {
       if (!item.description.trim()) {
         setMessage({ type: 'error', text: 'All line items must have a description' });
-        return false;
-      }
-      if (!item.propertyId) {
-        setMessage({ type: 'error', text: 'All line items must have a property' });
-        return false;
-      }
-      if (!item.glAccountId) {
-        setMessage({ type: 'error', text: 'All line items must have a GL account' });
         return false;
       }
       if (item.quantity <= 0) {
@@ -206,55 +177,17 @@ export default function CreateManualInvoicePage() {
     return true;
   };
 
-  const handleFileSelect = async (file: File) => {
-    setSelectedFile(file);
-    setUploadStatus('uploading');
-    setUploadError('');
-  
-    try {
-      // Upload to Google Cloud Storage
-      const uploadedFile = await uploadToGCS(file);
-      
-      setUploadedFileData({
-        fileName: file.name,
-        fileSize: file.size,
-        fileUrl: uploadedFile.url,
-        mimeType: file.type,
-      });
-      setUploadStatus('success');
-    } catch (error: any) {
-      console.error('File upload error:', error);
-      setUploadError(error.message || 'Failed to upload file');
-      setUploadStatus('error');
-      setSelectedFile(null);
-    }
-  };
-  
-  const handleFileRemove = () => {
-    setSelectedFile(null);
-    setUploadedFileData(null);
-    setUploadStatus('idle');
-    setUploadError('');
-  };
-
   const handleSubmit = async () => {
     if (!validateForm()) return;
-  
+
     setIsSubmitting(true);
     setMessage(null);
-  
+
     try {
-      // Debug logs
-      console.log('uploadedFileData:', uploadedFileData);
-      console.log('selectedFile:', selectedFile);
-      console.log('uploadStatus:', uploadStatus);
-  
-      // Build invoice data
-      const invoiceData: any = {
-        purchaseOrderId: purchaseOrderId === 'none' ? undefined : purchaseOrderId,
+      const updateData: any = {
+        id: invoice.id,
         invoiceNumber,
         invoiceDate,
-        dueDate,
         vendor,
         description,
         totalAmount: calculateTotal(),
@@ -268,29 +201,25 @@ export default function CreateManualInvoicePage() {
           taxAmount: item.taxAmount,
         })),
       };
-  
-      // Add file data if uploaded
-      if (uploadedFileData) {
-        invoiceData.fileName = uploadedFileData.fileName;
-        invoiceData.fileSize = uploadedFileData.fileSize;
-        invoiceData.fileUrl = uploadedFileData.fileUrl;
-        invoiceData.mimeType = uploadedFileData.mimeType;
+
+      // Only include PO if changed
+      if (purchaseOrderId !== 'none' && purchaseOrderId !== invoice.linkedPurchaseOrder?.id) {
+        updateData.purchaseOrderId = purchaseOrderId;
       }
-  
-      console.log('Final invoiceData being sent:', invoiceData);
-  
-      const invoice = await createManualInvoice(invoiceData);
-  
-      setMessage({ type: 'success', text: 'Invoice created successfully' });
+
+      await updateInvoice(updateData);
+
+      setMessage({ type: 'success', text: 'Invoice updated successfully' });
       setTimeout(() => {
-        navigate(`/invoices/manual/${invoice.id}`);
-      }, 1500);
+        onSave();
+      }, 1000);
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message || 'Failed to create invoice' });
+      setMessage({ type: 'error', text: error.message || 'Failed to update invoice' });
     } finally {
       setIsSubmitting(false);
     }
   };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -302,16 +231,11 @@ export default function CreateManualInvoicePage() {
     <div className="py-10 lg:mt-10">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/invoices/manual')}>
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">Create Invoice</h1>
-              <p className="text-muted-foreground mt-2">
-                Create a manual invoice entry
-              </p>
-            </div>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Edit Invoice</h1>
+            <p className="text-muted-foreground mt-2">
+              Update invoice details and line items
+            </p>
           </div>
         </div>
 
@@ -322,39 +246,43 @@ export default function CreateManualInvoicePage() {
         )}
 
         <div className="space-y-6">
-          {/* File Upload Card - NEW */}
-          <InvoiceFileUpload
-            onFileSelect={handleFileSelect}
-            onFileRemove={handleFileRemove}
-            selectedFile={selectedFile}
-            uploadStatus={uploadStatus}
-            errorMessage={uploadError}
-          />
           <Card>
             <CardHeader>
               <CardTitle>Basic Information</CardTitle>
-              <CardDescription>Enter the invoice details</CardDescription>
+              <CardDescription>Update the invoice details</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="po">Link to Purchase Order (Optional)</Label>
-                <Select value={purchaseOrderId} onValueChange={setPurchaseOrderId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="No PO (create invoice independently)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No PO</SelectItem>
-                    {approvedPOs && approvedPOs.length > 0 && approvedPOs.map((po: any) => (
-                      <SelectItem key={po.id} value={po.id}>
-                        {po.poNumber} - {po.vendor} - {formatCurrency(po.totalAmount)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  You can create invoices without a PO. Link them later if needed.
-                </p>
-              </div>
+              {/* PO Selection */}
+              {!invoice.linkedPurchaseOrder && (
+                <div className="space-y-2">
+                  <Label htmlFor="po">Link to Purchase Order (Optional)</Label>
+                  <Select value={purchaseOrderId} onValueChange={setPurchaseOrderId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="No PO (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No PO</SelectItem>
+                      {approvedPOs && approvedPOs.length > 0 && approvedPOs.map((po: any) => (
+                        <SelectItem key={po.id} value={po.id}>
+                          {po.poNumber} - {po.vendor} - {formatCurrency(po.totalAmount)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Link this invoice to an approved purchase order
+                  </p>
+                </div>
+              )}
+
+              {invoice.linkedPurchaseOrder && (
+                <Alert>
+                  <AlertDescription>
+                    This invoice is linked to PO #{invoice.linkedPurchaseOrder.poNumber}. 
+                    Cannot change PO link after creation.
+                  </AlertDescription>
+                </Alert>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -385,7 +313,7 @@ export default function CreateManualInvoicePage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="dueDate">Due Date *</Label>
+                  <Label htmlFor="dueDate">Due Date</Label>
                   <Input
                     id="dueDate"
                     type="date"
@@ -396,7 +324,7 @@ export default function CreateManualInvoicePage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Description *</Label>
+                <Label htmlFor="description">Description</Label>
                 <Textarea
                   id="description"
                   value={description}
@@ -425,8 +353,8 @@ export default function CreateManualInvoicePage() {
                     <TableRow>
                       <TableHead className="w-[50px]">#</TableHead>
                       <TableHead>Description *</TableHead>
-                      <TableHead>Property *</TableHead>
-                      <TableHead>GL Account *</TableHead>
+                      <TableHead>Property</TableHead>
+                      <TableHead>GL Account</TableHead>
                       <TableHead className="w-[100px]">Qty *</TableHead>
                       <TableHead className="w-[120px]">Unit Price *</TableHead>
                       <TableHead className="w-[120px]">Tax</TableHead>
@@ -562,12 +490,13 @@ export default function CreateManualInvoicePage() {
           </Card>
 
           <div className="flex gap-3 justify-end">
-            <Button variant="outline" onClick={() => navigate('/invoices/manual')}>
+            <Button variant="outline" onClick={onCancel} disabled={isSubmitting}>
+              <X className="h-4 w-4 mr-2" />
               Cancel
             </Button>
             <Button onClick={handleSubmit} disabled={isSubmitting}>
               <Save className="h-4 w-4 mr-2" />
-              {isSubmitting ? 'Creating...' : 'Create Invoice'}
+              {isSubmitting ? 'Saving...' : 'Save Changes'}
             </Button>
           </div>
         </div>

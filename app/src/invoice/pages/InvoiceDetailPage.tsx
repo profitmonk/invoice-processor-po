@@ -3,11 +3,14 @@ import { useNavigate, useParams } from 'react-router-dom';
 import {
   useQuery,
   getInvoiceById,
+  getApprovedPOsWithoutInvoices,
   markInvoicePaid,
-  deleteManualInvoice,
+  deleteInvoice,
+  linkInvoiceToPO,
 } from 'wasp/client/operations';
+import { useAuth } from 'wasp/client/auth';
 import { Button } from '../../components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
@@ -43,21 +46,33 @@ import {
   Trash2,
   DollarSign,
   Calendar,
-  Building2,
+  Edit,
+  Link as LinkIcon,
+  User as UserIcon,
 } from 'lucide-react';
+import EditInvoiceForm from './EditInvoiceForm';
 
-export default function ManualInvoiceDetailPage() {
+export default function InvoiceDetailPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const { data: user } = useAuth();
 
   if (!id) {
-    navigate('/invoices/manual');
+    navigate('/invoices');
     return null;
   }
 
   const { data: invoice, isLoading, refetch } = useQuery(getInvoiceById, { id });
+  // Debug logging
+  console.log('Invoice ID:', id);
+  console.log('Is Loading:', isLoading);
+  console.log('Invoice Data:', invoice);
+  const { data: approvedPOs } = useQuery(getApprovedPOsWithoutInvoices);
 
+  const [isEditing, setIsEditing] = useState(false);
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
+  const [isLinkPODialogOpen, setIsLinkPODialogOpen] = useState(false);
+  const [selectedPOId, setSelectedPOId] = useState('');
   const [paidDate, setPaidDate] = useState(new Date().toISOString().split('T')[0]);
   const [paymentMethod, setPaymentMethod] = useState('');
   const [paymentReference, setPaymentReference] = useState('');
@@ -90,16 +105,40 @@ export default function ManualInvoiceDetailPage() {
     }
   };
 
+  const handleLinkToPO = async () => {
+    if (!selectedPOId) {
+      setMessage({ type: 'error', text: 'Please select a purchase order' });
+      return;
+    }
+
+    setIsSubmitting(true);
+    setMessage(null);
+
+    try {
+      await linkInvoiceToPO({
+        invoiceId: id,
+        purchaseOrderId: selectedPOId,
+      });
+      setMessage({ type: 'success', text: 'Invoice linked to PO successfully' });
+      setIsLinkPODialogOpen(false);
+      refetch();
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.message || 'Failed to link invoice to PO' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleDelete = async () => {
     if (!confirm('Are you sure you want to delete this invoice? This cannot be undone.')) {
       return;
     }
 
     try {
-      await deleteManualInvoice({ id });
+      await deleteInvoice({ invoiceId: id });
       setMessage({ type: 'success', text: 'Invoice deleted' });
       setTimeout(() => {
-        navigate('/invoices/manual');
+        navigate('/invoices');
       }, 1500);
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message || 'Failed to delete invoice' });
@@ -133,7 +172,7 @@ export default function ManualInvoiceDetailPage() {
             <CardTitle>Invoice Not Found</CardTitle>
           </CardHeader>
           <CardContent>
-            <Button onClick={() => navigate('/invoices/manual')}>
+            <Button onClick={() => navigate('/invoices')}>
               Back to Invoices
             </Button>
           </CardContent>
@@ -142,22 +181,42 @@ export default function ManualInvoiceDetailPage() {
     );
   }
 
+  // Permissions
+  const isCreator = invoice.userId === user?.id;
+  const isAdmin = user?.isAdmin || user?.role === 'ADMIN';
+  const canEdit = isCreator || isAdmin;
+  const canDelete = isCreator || isAdmin;
+  const canMarkPaid = isCreator || isAdmin || user?.role === 'ACCOUNTING';
+
   const structuredData = (invoice.structuredData as any) || {};
-  const paymentStatus = structuredData.paymentStatus || 'PENDING';
-  const isPaid = paymentStatus === 'PAID';
+  const isPaid = structuredData.paymentStatus === 'PAID';
+
+  // If editing, show edit form
+  if (isEditing) {
+    return (
+      <EditInvoiceForm
+        invoice={invoice}
+        onSave={() => {
+          setIsEditing(false);
+          refetch();
+        }}
+        onCancel={() => setIsEditing(false)}
+      />
+    );
+  }
 
   return (
     <div className="py-10 lg:mt-10">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/invoices/manual')}>
+            <Button variant="ghost" size="icon" onClick={() => navigate('/invoices')}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
               <div className="flex items-center gap-3">
                 <h1 className="text-3xl font-bold tracking-tight">
-                  Invoice #{invoice.invoiceNumber}
+                  Invoice #{invoice.invoiceNumber || 'N/A'}
                 </h1>
                 <Badge variant={isPaid ? 'default' : 'secondary'}>
                   {isPaid ? (
@@ -172,24 +231,55 @@ export default function ManualInvoiceDetailPage() {
                     </>
                   )}
                 </Badge>
+                <Badge variant={
+                  invoice.entryType === 'OCR' ? 'default' :
+                  invoice.entryType === 'MANUAL' ? 'secondary' :
+                  'outline'
+                }>
+                  {invoice.entryType === 'OCR' ? '🤖 OCR' :
+                   invoice.entryType === 'MANUAL' ? '✍️ Manual' :
+                   '✏️ Corrected'}
+                </Badge>
               </div>
-              <p className="text-muted-foreground mt-2">
-                Created {formatDate(invoice.createdAt)}
+              <p className="text-muted-foreground mt-2 flex items-center gap-2">
+                <UserIcon className="h-4 w-4" />
+                Created by {invoice.user?.username || invoice.user?.email} on {formatDate(invoice.createdAt)}
               </p>
             </div>
           </div>
           <div className="flex gap-2">
-            {!isPaid && (
-              <>
-                <Button variant="outline" onClick={() => setIsPaymentDialogOpen(true)}>
-                  <DollarSign className="h-4 w-4 mr-2" />
-                  Mark as Paid
-                </Button>
-                <Button variant="destructive" onClick={handleDelete}>
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
-                </Button>
-              </>
+            {invoice.fileUrl && invoice.fileUrl !== '' && (
+              <Button 
+                variant="outline" 
+                onClick={() => window.open(invoice.fileUrl, '_blank')}
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                View File
+              </Button>
+            )}
+            {!isPaid && canEdit && (
+              <Button variant="outline" onClick={() => setIsEditing(true)}>
+                <Edit className="h-4 w-4 mr-2" />
+                Edit
+              </Button>
+            )}
+            {!isPaid && !invoice.linkedPurchaseOrder && canEdit && (
+              <Button variant="outline" onClick={() => setIsLinkPODialogOpen(true)}>
+                <LinkIcon className="h-4 w-4 mr-2" />
+                Link to PO
+              </Button>
+            )}
+            {!isPaid && canMarkPaid && (
+              <Button variant="outline" onClick={() => setIsPaymentDialogOpen(true)}>
+                <DollarSign className="h-4 w-4 mr-2" />
+                Mark as Paid
+              </Button>
+            )}
+            {!isPaid && canDelete && (
+              <Button variant="destructive" onClick={handleDelete}>
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
+              </Button>
             )}
           </div>
         </div>
@@ -210,15 +300,15 @@ export default function ManualInvoiceDetailPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Vendor</p>
-                    <p className="text-lg font-semibold">{invoice.vendorName}</p>
+                    <p className="text-lg font-semibold">{invoice.vendorName || 'N/A'}</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Invoice Number</p>
-                    <p className="text-lg font-mono font-semibold">{invoice.invoiceNumber}</p>
+                    <p className="text-lg font-mono font-semibold">{invoice.invoiceNumber || 'N/A'}</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Invoice Date</p>
-                    <p className="text-lg">{formatDate(invoice.invoiceDate)}</p>
+                    <p className="text-lg">{invoice.invoiceDate ? formatDate(invoice.invoiceDate) : 'N/A'}</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Due Date</p>
@@ -232,61 +322,44 @@ export default function ManualInvoiceDetailPage() {
                     <p className="text-base mt-1">{structuredData.description}</p>
                   </div>
                 )}
-                {/* ADD THIS NEW SECTION HERE */}
-                {invoice.fileUrl && invoice.fileUrl !== '' && invoice.mimeType !== 'application/manual' && (
-                  <div className="border-t pt-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">Attached File</p>
-                        <p className="text-sm mt-1">{invoice.fileName}</p>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => window.open(invoice.fileUrl, '_blank')}
-                      >
-                        <FileText className="h-4 w-4 mr-2" />
-                        View File
-                      </Button>
-                    </div>
-                  </div>
-                )}
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Line Items</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>#</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead className="text-right">Qty</TableHead>
-                      <TableHead className="text-right">Unit Price</TableHead>
-                      <TableHead className="text-right">Amount</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {invoice.lineItems?.map((item: any, index: number) => (
-                      <TableRow key={item.id}>
-                        <TableCell>{index + 1}</TableCell>
-                        <TableCell>{item.description}</TableCell>
-                        <TableCell className="text-right">{item.quantity || '-'}</TableCell>
-                        <TableCell className="text-right">
-                          {item.unitPrice ? formatCurrency(item.unitPrice) : '-'}
-                        </TableCell>
-                        <TableCell className="text-right font-semibold">
-                          {formatCurrency(item.amount)}
-                        </TableCell>
+            {invoice.lineItems && invoice.lineItems.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Line Items</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>#</TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead className="text-right">Qty</TableHead>
+                        <TableHead className="text-right">Unit Price</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+                    </TableHeader>
+                    <TableBody>
+                      {invoice.lineItems.map((item: any, index: number) => (
+                        <TableRow key={item.id}>
+                          <TableCell>{index + 1}</TableCell>
+                          <TableCell>{item.description}</TableCell>
+                          <TableCell className="text-right">{item.quantity || '-'}</TableCell>
+                          <TableCell className="text-right">
+                            {item.unitPrice ? formatCurrency(item.unitPrice) : '-'}
+                          </TableCell>
+                          <TableCell className="text-right font-semibold">
+                            {formatCurrency(item.amount)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            )}
 
             {isPaid && structuredData.paidDate && (
               <Card>
@@ -340,7 +413,7 @@ export default function ManualInvoiceDetailPage() {
                   <div className="border-t pt-2 flex justify-between">
                     <span className="font-semibold">Total:</span>
                     <span className="font-bold text-lg">
-                      {formatCurrency(invoice.totalAmount)}
+                      {formatCurrency(invoice.totalAmount || 0)}
                     </span>
                   </div>
                 </div>
@@ -439,6 +512,56 @@ export default function ManualInvoiceDetailPage() {
               <Button onClick={handleMarkPaid} disabled={isSubmitting}>
                 <CheckCircle className="h-4 w-4 mr-2" />
                 {isSubmitting ? 'Processing...' : 'Mark as Paid'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Link to PO Dialog */}
+        <Dialog open={isLinkPODialogOpen} onOpenChange={setIsLinkPODialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Link to Purchase Order</DialogTitle>
+              <DialogDescription>
+                Select an approved purchase order to link to this invoice
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="po">Purchase Order</Label>
+                <Select value={selectedPOId} onValueChange={setSelectedPOId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select PO" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {approvedPOs && approvedPOs.length > 0 ? (
+                      approvedPOs.map((po: any) => (
+                        <SelectItem key={po.id} value={po.id}>
+                          {po.poNumber} - {po.vendor} - {formatCurrency(po.totalAmount)}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="none" disabled>
+                        No approved POs available
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsLinkPODialogOpen(false);
+                  setSelectedPOId('');
+                }}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleLinkToPO} disabled={isSubmitting || !selectedPOId}>
+                <LinkIcon className="h-4 w-4 mr-2" />
+                {isSubmitting ? 'Linking...' : 'Link to PO'}
               </Button>
             </DialogFooter>
           </DialogContent>

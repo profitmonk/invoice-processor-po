@@ -100,8 +100,11 @@ app OpenSaaS {
 
 route LandingPageRoute { path: "/", to: LandingPage }
 page LandingPage {
-  component: import LandingPage from "@src/landing-page/LandingPage"
+  component: import LandingPage from "@src/landing/LandingPage"
 }
+//page LandingPage {
+//  component: import LandingPage from "@src/landing-page/LandingPage"
+//}
 
 //#region Auth Pages
 route LoginRoute { path: "/login", to: LoginPage }
@@ -156,6 +159,23 @@ page DemoAppPage {
 }
 
 // ============================================
+// LANDING & DASHBOARD PAGES
+// ============================================
+
+//page LandingPage {
+//  component: import { default } from "@src/landing/LandingPage"
+//}
+
+//page DashboardPage {
+//  component: import { default } from "@src/dashboard/DashboardPage"
+//}
+
+// Routes
+// Dashboard route (accessible to all users)
+route LandingRoute { path: "/", to: LandingPage }
+route DashboardRoute { path: "/dashboard", to: AdminDashboardPage }
+
+// ============================================
 // INVOICES AND PURCHASE ORDER ROUTES
 // ============================================
 
@@ -208,6 +228,12 @@ route ManualInvoiceDetailRoute { path: "/invoices/manual/:id", to: ManualInvoice
 page ManualInvoiceDetailPage {
   authRequired: true,
   component: import ManualInvoiceDetailPage from "@src/invoice/pages/ManualInvoiceDetailPage"
+}
+
+// Update the route for unified invoice detail
+route InvoiceDetailRoute { path: "/invoices/:id", to: InvoiceDetailPage }
+page InvoiceDetailPage {
+  component: import { default } from "@src/invoice/pages/InvoiceDetailPage"
 }
 
 action generateGptResponse {
@@ -395,6 +421,10 @@ action getUploadUrl {
   fn: import { getUploadUrl } from "@src/invoice/operations/uploadInvoice",
   entities: [User]
 }
+query getSignedUploadUrl {
+  fn: import { getSignedUploadUrl } from "@src/invoice/operations/fileUploadOperations",
+  entities: []
+}
 
 action createInvoice {
   fn: import { createInvoice } from "@src/invoice/operations/createInvoice",
@@ -455,6 +485,25 @@ query getInvoiceById {
   fn: import { getInvoiceById } from "@src/invoice/operations/poInvoiceOperations",
   entities: [Invoice, InvoiceLineItem, PurchaseOrder]
 }
+
+// Get all invoices (org-wide)
+query getAllInvoices {
+  fn: import { getAllInvoices } from "@src/invoice/operations/poInvoiceOperations",
+  entities: [Invoice, InvoiceLineItem, PurchaseOrder, User]
+}
+
+// Update invoice
+action updateInvoice {
+  fn: import { updateInvoice } from "@src/invoice/operations/poInvoiceOperations",
+  entities: [Invoice, InvoiceLineItem, PurchaseOrder, Notification, User]
+}
+
+// Link invoice to PO
+action linkInvoiceToPO {
+  fn: import { linkInvoiceToPO } from "@src/invoice/operations/poInvoiceOperations",
+  entities: [Invoice, PurchaseOrder, Notification, User]
+}
+
 
 // ============================================
 // ORGANIZATION OPERATIONS
