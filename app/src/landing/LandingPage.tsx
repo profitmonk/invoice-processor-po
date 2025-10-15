@@ -17,6 +17,9 @@ import {
   Clock,
   DollarSign,
   Shield,
+  AlertTriangle,
+  FileCheck,
+  Target,
 } from 'lucide-react';
 
 export default function LandingPage() {
@@ -32,80 +35,103 @@ export default function LandingPage() {
 
   const features = [
     {
-      icon: <FileText className="h-8 w-8" />,
-      title: 'Smart Invoice Processing',
-      description: 'AI-powered OCR extracts data automatically. Manual entry option for complete control.',
+      icon: <Zap className="h-8 w-8" />,
+      title: 'AI-Powered OCR',
+      description: 'Upload invoices from any vendor. AI extracts vendor, amount, date, line items, and GL codes with 99% accuracy—no manual data entry.',
       color: 'text-blue-600',
       bgColor: 'bg-blue-50',
     },
     {
+      icon: <AlertTriangle className="h-8 w-8" />,
+      title: 'Smart Discrepancy Detection',
+      description: 'AI compares invoice amounts to PO amounts automatically. Flags price differences, quantity mismatches, and duplicates before you pay.',
+      color: 'text-red-600',
+      bgColor: 'bg-red-50',
+    },
+    {
       icon: <ShoppingCart className="h-8 w-8" />,
       title: 'Purchase Order Management',
-      description: 'Create, track, and approve POs with customizable multi-level approval workflows.',
+      description: 'Create POs with multi-level approval workflows. Set thresholds by property, amount, and expense type.',
       color: 'text-green-600',
       bgColor: 'bg-green-50',
     },
     {
-      icon: <CheckCircle className="h-8 w-8" />,
-      title: 'Invoice-PO Linking',
-      description: 'Automatically match invoices to purchase orders for complete spend tracking.',
+      icon: <FileCheck className="h-8 w-8" />,
+      title: 'Duplicate Prevention',
+      description: 'AI identifies duplicate invoices across your entire portfolio. Never pay the same vendor invoice twice.',
       color: 'text-purple-600',
       bgColor: 'bg-purple-50',
     },
     {
-      icon: <BarChart3 className="h-8 w-8" />,
+      icon: <Building2 className="h-8 w-8" />,
       title: 'Multi-Property Tracking',
-      description: 'Track expenses across multiple properties with customizable GL account coding.',
+      description: 'Track expenses by property, region, or asset class. Roll up to portfolio level or drill down to individual units.',
       color: 'text-orange-600',
       bgColor: 'bg-orange-50',
     },
     {
-      icon: <Users className="h-8 w-8" />,
-      title: 'Role-Based Access',
-      description: 'Property managers, accounting, corporate - each role sees exactly what they need.',
-      color: 'text-pink-600',
-      bgColor: 'bg-pink-50',
+      icon: <Target className="h-8 w-8" />,
+      title: 'Budget vs. Actual',
+      description: 'Set budgets by property and GL code. Real-time alerts when spending approaches thresholds.',
+      color: 'text-indigo-600',
+      bgColor: 'bg-indigo-50',
     },
     {
-      icon: <TrendingUp className="h-8 w-8" />,
-      title: 'Real-Time Analytics',
-      description: 'Track spending patterns, payment status, and budget utilization in real-time.',
+      icon: <Shield className="h-8 w-8" />,
+      title: 'Audit Trail & Compliance',
+      description: 'Complete approval history and document trail for every transaction. SOX and audit-ready reporting built in.',
       color: 'text-teal-600',
       bgColor: 'bg-teal-50',
+    },
+    {
+      icon: <BarChart3 className="h-8 w-8" />,
+      title: 'Real-Time Analytics',
+      description: 'Dashboard shows spending by property, vendor, GL code, and category. See your true NOI instantly.',
+      color: 'text-pink-600',
+      bgColor: 'bg-pink-50',
     },
   ];
 
   const workflow = [
     {
       step: '1',
-      title: 'Upload Invoices',
-      description: 'Drag & drop PDFs or images. OCR extracts data automatically.',
-      icon: <FileText className="h-6 w-6" />,
-    },
-    {
-      step: '2',
-      title: 'Review & Link',
-      description: 'System suggests matching POs. Review and approve with one click.',
+      title: 'Create Purchase Orders',
+      description: 'Set approval thresholds by property, amount, and expense type. Multi-level approvals route automatically.',
       icon: <ShoppingCart className="h-6 w-6" />,
     },
     {
+      step: '2',
+      title: 'AI Reads Invoices',
+      description: 'Upload vendor invoices—HVAC, landscaping, utilities, CapEx. AI extracts every detail with 99% accuracy.',
+      icon: <Zap className="h-6 w-6" />,
+    },
+    {
       step: '3',
-      title: 'Get Approvals',
-      description: 'Automatic routing based on amount thresholds and expense types.',
-      icon: <CheckCircle className="h-6 w-6" />,
+      title: 'Smart Matching & Alerts',
+      description: 'AI matches invoices to POs automatically. Flags price differences, quantity mismatches, and duplicates before you pay.',
+      icon: <AlertTriangle className="h-6 w-6" />,
     },
     {
       step: '4',
-      title: 'Track Payment',
-      description: 'Mark as paid, track aging, monitor cash flow.',
-      icon: <DollarSign className="h-6 w-6" />,
+      title: 'Track in Real-Time',
+      description: 'Dashboard shows spending by property, vendor, GL code. Finally see your true NOI instantly.',
+      icon: <BarChart3 className="h-6 w-6" />,
     },
   ];
 
   const stats = [
+    { label: 'OCR Accuracy', value: '99%' },
     { label: 'Hours Saved Weekly', value: '15+' },
-    { label: 'Processing Accuracy', value: '99%' },
-    { label: 'Faster Approvals', value: '3x' },
+    { label: 'Manual Data Entry', value: 'Zero' },
+  ];
+
+  const targetAudience = [
+    '✓ Multifamily Operators (apartments, senior living, student housing)',
+    '✓ Commercial Property Managers (office, coworking, flex space)',
+    '✓ Retail Property Owners (shopping centers, strip malls)',
+    '✓ Industrial Real Estate (warehouses, distribution centers)',
+    '✓ REITs & Institutional Owners (multi-asset portfolios)',
+    '✓ Property Management Firms (third-party operators)',
   ];
 
   return (
@@ -139,17 +165,18 @@ export default function LandingPage() {
           <div className="mx-auto max-w-3xl text-center">
             <Badge className="mb-6 bg-blue-600 text-white px-4 py-2">
               <Zap className="h-4 w-4 mr-2" />
-              AI-Powered Invoice & PO Management
+              AI-Powered Real Estate Operations Platform
             </Badge>
             <h1 className="text-5xl font-bold tracking-tight text-gray-900 sm:text-7xl">
-              Streamline Your{' '}
+              Let AI Optimize Your Spend{' '}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
-                Invoice Workflow
+                While You Run Your Business
               </span>
             </h1>
             <p className="mt-6 text-xl leading-8 text-gray-600">
-              Complete invoice and purchase order management for multi-property operations. 
-              OCR automation, approval workflows, and real-time tracking - all in one platform.
+              Complete invoice and purchase order management for real estate portfolios. 
+              AI-powered OCR, automated approvals, smart PO matching, and real-time 
+              tracking—all in one platform.
             </p>
             <div className="mt-10 flex items-center justify-center gap-4">
               <Button size="lg" onClick={() => navigate('/signup')} className="text-lg px-8 py-6">
@@ -182,10 +209,10 @@ export default function LandingPage() {
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="mx-auto max-w-2xl text-center mb-16">
             <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-              Simple, Powerful Workflow
+              From PO to Payment in 4 Steps
             </h2>
             <p className="mt-4 text-lg text-gray-600">
-              From invoice receipt to payment in 4 easy steps
+              AI handles the heavy lifting while you focus on your properties
             </p>
           </div>
 
@@ -214,24 +241,24 @@ export default function LandingPage() {
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="mx-auto max-w-2xl text-center mb-16">
             <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-              Everything You Need
+              Everything You Need to Control Spending
             </h2>
             <p className="mt-4 text-lg text-gray-600">
-              Built for multi-property management and operations teams
+              Built for real estate operations teams
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {features.map((feature, index) => (
               <Card key={index} className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <div className={`w-16 h-16 rounded-lg ${feature.bgColor} flex items-center justify-center mb-4`}>
                     <div className={feature.color}>{feature.icon}</div>
                   </div>
-                  <CardTitle className="text-xl">{feature.title}</CardTitle>
+                  <CardTitle className="text-lg">{feature.title}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <CardDescription className="text-base">{feature.description}</CardDescription>
+                  <CardDescription className="text-sm">{feature.description}</CardDescription>
                 </CardContent>
               </Card>
             ))}
@@ -239,8 +266,37 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Social Proof / Trust Signals */}
+      {/* Who It's For */}
       <section className="py-20 bg-gray-50">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          <div className="mx-auto max-w-2xl text-center mb-16">
+            <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+              Built for Real Estate Operators
+            </h2>
+            <p className="mt-4 text-lg text-gray-600">
+              From 10 units to 10,000+
+            </p>
+          </div>
+
+          <div className="mx-auto max-w-3xl">
+            <Card>
+              <CardContent className="p-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {targetAudience.map((item, index) => (
+                    <p key={index} className="text-gray-700 flex items-start gap-2">
+                      <span className="text-green-600 font-bold">✓</span>
+                      <span>{item.replace('✓ ', '')}</span>
+                    </p>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Why Choose InvoiceFlow */}
+      <section className="py-20 bg-white">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="mx-auto max-w-2xl text-center mb-16">
             <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
@@ -248,7 +304,7 @@ export default function LandingPage() {
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             <Card>
               <CardHeader>
                 <Clock className="h-12 w-12 text-blue-600 mb-4" />
@@ -256,31 +312,43 @@ export default function LandingPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-gray-600">
-                  Reduce invoice processing time by 80% with automated OCR and smart PO matching.
+                  Process 100+ invoices per week with AI. Your team focuses on properties, not paperwork.
                 </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <Shield className="h-12 w-12 text-green-600 mb-4" />
+                <DollarSign className="h-12 w-12 text-green-600 mb-4" />
+                <CardTitle>Prevent Overpayments</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600">
+                  AI catches price differences, duplicate invoices, and unauthorized charges before you pay.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <Shield className="h-12 w-12 text-purple-600 mb-4" />
                 <CardTitle>Stay Compliant</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-gray-600">
-                  Built-in approval workflows ensure proper authorization and audit trails.
+                  Complete audit trails, approval workflows, and SOX-ready reporting built in.
                 </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <TrendingUp className="h-12 w-12 text-purple-600 mb-4" />
-                <CardTitle>Gain Insights</CardTitle>
+                <TrendingUp className="h-12 w-12 text-orange-600 mb-4" />
+                <CardTitle>Scale Effortlessly</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-gray-600">
-                  Real-time analytics help you understand spending patterns and optimize costs.
+                  Same platform whether you manage 10 units or 10,000. Add properties without adding headcount.
                 </p>
               </CardContent>
             </Card>
@@ -292,10 +360,10 @@ export default function LandingPage() {
       <section className="py-20 bg-gradient-to-r from-blue-600 to-purple-600">
         <div className="mx-auto max-w-7xl px-6 lg:px-8 text-center">
           <h2 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
-            Ready to Transform Your Invoice Management?
+            Ready to Let AI Handle Your Invoices?
           </h2>
           <p className="mt-6 text-xl text-blue-100">
-            Join property management teams and operations leaders who trust InvoiceFlow
+            Join real estate teams processing thousands of invoices every month
           </p>
           <div className="mt-10 flex items-center justify-center gap-4">
             <Button size="lg" variant="secondary" onClick={() => navigate('/signup')} className="text-lg px-8 py-6">
@@ -330,7 +398,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="mt-8 border-t border-gray-800 pt-8 text-center text-sm text-gray-400">
-            <p>© 2024 InvoiceFlow. Built for property management and operations teams.</p>
+            <p>© 2024 InvoiceFlow. Built for real estate operations teams.</p>
           </div>
         </div>
       </footer>

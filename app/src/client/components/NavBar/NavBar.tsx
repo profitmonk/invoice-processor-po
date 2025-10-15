@@ -1,256 +1,329 @@
-import { LogIn, Menu } from "lucide-react";
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
-import { Link as ReactRouterLink } from "react-router-dom";
-import { useAuth } from "wasp/client/auth";
-import { Link as WaspRouterLink, routes } from "wasp/client/router";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "../../../components/ui/sheet";
-import { cn } from "../../../lib/utils";
-import { throttleWithTrailingInvocation } from "../../../shared/utils";
-import { UserDropdown } from "../../../user/UserDropdown";
-import { UserMenuItems } from "../../../user/UserMenuItems";
-import { useIsLandingPage } from "../../hooks/useIsLandingPage";
-import logo from "../../static/logo.webp";
-import DarkModeSwitcher from "../DarkModeSwitcher";
-import { Announcement } from "./Announcement";
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth, logout } from 'wasp/client/auth';
+import { useState } from 'react';
+import { 
+  LayoutDashboard, 
+  FileText, 
+  ShoppingCart, 
+  CheckCircle, 
+  Settings,
+  LogOut,
+  User,
+  Building2,
+  Users,
+  Menu,
+  X,
+  DollarSign,
+} from 'lucide-react';
 
-export interface NavigationItem {
-  name: string;
-  to: string;
-}
-
-export default function NavBar({
-  navigationItems,
-}: {
-  navigationItems: NavigationItem[];
-}) {
-  const [isScrolled, setIsScrolled] = useState(false);
-  const isLandingPage = useIsLandingPage();
-
-  useEffect(() => {
-    const throttledHandler = throttleWithTrailingInvocation(() => {
-      setIsScrolled(window.scrollY > 0);
-    }, 50);
-
-    window.addEventListener("scroll", throttledHandler);
-
-    return () => {
-      window.removeEventListener("scroll", throttledHandler);
-      throttledHandler.cancel();
-    };
-  }, []);
-
-  return (
-    <>
-      {isLandingPage && <Announcement />}
-      <header
-        className={cn(
-          "sticky top-0 z-50 transition-all duration-300",
-          isScrolled && "top-4",
-        )}
-      >
-        <div
-          className={cn("transition-all duration-300", {
-            "bg-background/90 border-border mx-4 rounded-full border pr-2 shadow-lg backdrop-blur-lg md:mx-20 lg:pr-0":
-              isScrolled,
-            "bg-background/80 border-border mx-0 border-b backdrop-blur-lg":
-              !isScrolled,
-          })}
-        >
-          <nav
-            className={cn(
-              "flex items-center justify-between transition-all duration-300",
-              {
-                "p-3 lg:px-6": isScrolled,
-                "p-6 lg:px-8": !isScrolled,
-              },
-            )}
-            aria-label="Global"
-          >
-            <div className="flex items-center gap-6">
-              <WaspRouterLink
-                to={routes.LandingPageRoute.to}
-                className="text-foreground hover:text-primary flex items-center transition-colors duration-300 ease-in-out"
-              >
-                <NavLogo isScrolled={isScrolled} />
-                <span
-                  className={cn(
-                    "text-foreground font-semibold leading-6 transition-all duration-300",
-                    {
-                      "ml-2 text-sm": !isScrolled,
-                      "ml-2 text-xs": isScrolled,
-                    },
-                  )}
-                >
-                  Your SaaS
-                </span>
-              </WaspRouterLink>
-
-              <ul className="ml-4 hidden items-center gap-6 lg:flex">
-                {renderNavigationItems(navigationItems)}
-              </ul>
-            </div>
-            <NavBarMobileMenu
-              isScrolled={isScrolled}
-              navigationItems={navigationItems}
-            />
-            <NavBarDesktopUserDropdown isScrolled={isScrolled} />
-          </nav>
-        </div>
-      </header>
-    </>
-  );
-}
-
-function NavBarDesktopUserDropdown({ isScrolled }: { isScrolled: boolean }) {
-  const { data: user, isLoading: isUserLoading } = useAuth();
-
-  return (
-    <div className="hidden items-center justify-end gap-3 lg:flex lg:flex-1">
-      <ul className="flex items-center justify-center gap-2 sm:gap-4">
-        <DarkModeSwitcher />
-      </ul>
-      {isUserLoading ? null : !user ? (
-        <WaspRouterLink
-          to={routes.LoginRoute.to}
-          className={cn(
-            "ml-3 font-semibold leading-6 transition-all duration-300",
-            {
-              "text-sm": !isScrolled,
-              "text-xs": isScrolled,
-            },
-          )}
-        >
-          <div className="text-foreground hover:text-primary flex items-center transition-colors duration-300 ease-in-out">
-            Log in{" "}
-            <LogIn
-              size={isScrolled ? "1rem" : "1.1rem"}
-              className={cn("transition-all duration-300", {
-                "ml-1 mt-[0.1rem]": !isScrolled,
-                "ml-1": isScrolled,
-              })}
-            />
-          </div>
-        </WaspRouterLink>
-      ) : (
-        <div className="ml-3">
-          <UserDropdown user={user} />
-        </div>
-      )}
-    </div>
-  );
-}
-
-function NavBarMobileMenu({
-  isScrolled,
-  navigationItems,
-}: {
-  isScrolled: boolean;
-  navigationItems: NavigationItem[];
-}) {
-  const { data: user, isLoading: isUserLoading } = useAuth();
+export default function NavBar() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { data: user } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [adminDropdownOpen, setAdminDropdownOpen] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/');
+  };
+
+  if (!user) {
+    return null;
+  }
+
+  const isAdmin = user.isAdmin || user.role === 'ADMIN';
+
+  const navItems = [
+    { 
+      name: 'Dashboard', 
+      path: '/dashboard', 
+      icon: LayoutDashboard 
+    },
+    { 
+      name: 'Invoices', 
+      path: '/invoices', 
+      icon: FileText 
+    },
+    { 
+      name: 'Purchase Orders', 
+      path: '/purchase-orders', 
+      icon: ShoppingCart 
+    },
+    { 
+      name: 'Approvals', 
+      path: '/approvals', 
+      icon: CheckCircle 
+    },
+  ];
+
+  const isActive = (path: string) => {
+    if (path === '/dashboard') {
+      return location.pathname === '/dashboard' || location.pathname === '/admin';
+    }
+    return location.pathname === path || location.pathname.startsWith(path + '/');
+  };
 
   return (
-    <div className="flex lg:hidden">
-      <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-        <SheetTrigger asChild>
-          <button
-            type="button"
-            className={cn(
-              "text-muted-foreground hover:text-muted hover:bg-accent inline-flex items-center justify-center rounded-md transition-colors",
-            )}
+    <nav className="border-b bg-white sticky top-0 z-50 shadow-sm">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex h-16 items-center justify-between">
+          {/* Logo */}
+          <div 
+            className="flex items-center gap-2 cursor-pointer"
+            onClick={() => navigate('/dashboard')}
           >
-            <span className="sr-only">Open main menu</span>
-            <Menu
-              className={cn("transition-all duration-300", {
-                "size-8 p-1": !isScrolled,
-                "size-6 p-0.5": isScrolled,
-              })}
-              aria-hidden="true"
-            />
-          </button>
-        </SheetTrigger>
-        <SheetContent side="right" className="w-[300px] sm:w-[400px]">
-          <SheetHeader>
-            <SheetTitle className="flex items-center">
-              <WaspRouterLink to={routes.LandingPageRoute.to}>
-                <span className="sr-only">Your SaaS</span>
-                <NavLogo isScrolled={false} />
-              </WaspRouterLink>
-            </SheetTitle>
-          </SheetHeader>
-          <div className="mt-6 flow-root">
-            <div className="divide-border -my-6 divide-y">
-              <ul className="space-y-2 py-6">
-                {renderNavigationItems(navigationItems, setMobileMenuOpen)}
-              </ul>
-              <div className="py-6">
-                {isUserLoading ? null : !user ? (
-                  <WaspRouterLink to={routes.LoginRoute.to}>
-                    <div className="text-foreground hover:text-primary flex items-center justify-end transition-colors duration-300 ease-in-out">
-                      Log in <LogIn size="1.1rem" className="ml-1" />
+            <Building2 className="h-7 w-7 text-blue-600" />
+            <h1 className="text-lg font-bold hidden sm:block">
+              <span className="text-blue-600">Invoice</span>
+              <span className="text-gray-900">Flow</span>
+            </h1>
+          </div>
+
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center gap-2">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const active = isActive(item.path);
+              return (
+                <button
+                  key={item.path}
+                  onClick={() => navigate(item.path)}
+                  className={`
+                    flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors
+                    ${active 
+                      ? 'bg-blue-600 text-white' 
+                      : 'text-gray-700 hover:bg-gray-100'
+                    }
+                  `}
+                >
+                  <Icon className="h-4 w-4" />
+                  {item.name}
+                </button>
+              );
+            })}
+
+            {/* Admin Dropdown - Click Based */}
+            {isAdmin && (
+              <div className="relative">
+                <button 
+                  onClick={() => {
+                    setAdminDropdownOpen(!adminDropdownOpen);
+                    setUserDropdownOpen(false);
+                  }}
+                  className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+                >
+                  <Settings className="h-4 w-4" />
+                  Admin
+                </button>
+                {adminDropdownOpen && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-10" 
+                      onClick={() => setAdminDropdownOpen(false)}
+                    ></div>
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border z-20">
+                      <button
+                        onClick={() => {
+                          navigate('/admin/users');
+                          setAdminDropdownOpen(false);
+                        }}
+                        className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        <Users className="h-4 w-4" />
+                        Manage Users
+                      </button>
+                      <button
+                        onClick={() => {
+                          navigate('/admin/configuration');
+                          setAdminDropdownOpen(false);
+                        }}
+                        className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        <Settings className="h-4 w-4" />
+                        Configuration
+                      </button>
                     </div>
-                  </WaspRouterLink>
-                ) : (
-                  <ul className="space-y-2">
-                    <UserMenuItems
-                      user={user}
-                      onItemClick={() => setMobileMenuOpen(false)}
-                    />
-                  </ul>
+                  </>
                 )}
               </div>
-              <div className="py-6">
-                <DarkModeSwitcher />
-              </div>
+            )}
+          </div>
+
+          {/* User Menu */}
+          <div className="flex items-center gap-2">
+            {/* Mobile menu button */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 rounded-md text-gray-700 hover:bg-gray-100"
+            >
+              {mobileMenuOpen ? (
+                <X className="h-6 w-6" />
+              ) : (
+                <Menu className="h-6 w-6" />
+              )}
+            </button>
+
+            {/* Desktop User Dropdown */}
+            <div className="hidden md:block relative">
+              <button 
+                onClick={() => {
+                  setUserDropdownOpen(!userDropdownOpen);
+                  setAdminDropdownOpen(false);
+                }}
+                className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100"
+              >
+                <User className="h-4 w-4" />
+                <span className="hidden lg:inline max-w-[150px] truncate">
+                  {user.username || user.email}
+                </span>
+              </button>
+              {userDropdownOpen && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-10" 
+                    onClick={() => setUserDropdownOpen(false)}
+                  ></div>
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border z-20">
+                    <button
+                      onClick={() => {
+                        navigate('/account');
+                        setUserDropdownOpen(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      <User className="h-4 w-4" />
+                      Account Settings
+                    </button>
+                    <button
+                      onClick={() => {
+                        navigate('/pricing');
+                        setUserDropdownOpen(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      <DollarSign className="h-4 w-4" />
+                      Pricing
+                    </button>
+                    <div className="border-t"></div>
+                    <button
+                      onClick={() => {
+                        handleLogout();
+                        setUserDropdownOpen(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Logout
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
-        </SheetContent>
-      </Sheet>
-    </div>
+        </div>
+      </div>
+
+      {/* Mobile Menu */}
+      {mobileMenuOpen && (
+        <div className="md:hidden border-t bg-white">
+          <div className="px-2 pt-2 pb-3 space-y-1">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const active = isActive(item.path);
+              return (
+                <button
+                  key={item.path}
+                  onClick={() => {
+                    navigate(item.path);
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`
+                    w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium
+                    ${active 
+                      ? 'bg-blue-600 text-white' 
+                      : 'text-gray-700 hover:bg-gray-100'
+                    }
+                  `}
+                >
+                  <Icon className="h-4 w-4" />
+                  {item.name}
+                </button>
+              );
+            })}
+
+            {/* Admin Section */}
+            {isAdmin && (
+              <>
+                <div className="border-t my-2"></div>
+                <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase">
+                  Admin
+                </div>
+                <button
+                  onClick={() => {
+                    navigate('/admin/users');
+                    setMobileMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100"
+                >
+                  <Users className="h-4 w-4" />
+                  Manage Users
+                </button>
+                <button
+                  onClick={() => {
+                    navigate('/admin/configuration');
+                    setMobileMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100"
+                >
+                  <Settings className="h-4 w-4" />
+                  Configuration
+                </button>
+              </>
+            )}
+
+            {/* User Section */}
+            <div className="border-t my-2"></div>
+            <button
+              onClick={() => {
+                navigate('/account');
+                setMobileMenuOpen(false);
+              }}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100"
+            >
+              <User className="h-4 w-4" />
+              Account Settings
+            </button>
+            <button
+              onClick={() => {
+                navigate('/pricing');
+                setMobileMenuOpen(false);
+              }}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100"
+            >
+              <DollarSign className="h-4 w-4" />
+              Pricing
+            </button>
+            <button
+              onClick={() => {
+                handleLogout();
+                setMobileMenuOpen(false);
+              }}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-red-600 hover:bg-gray-100"
+            >
+              <LogOut className="h-4 w-4" />
+              Logout
+            </button>
+          </div>
+        </div>
+      )}
+    </nav>
   );
 }
 
-function renderNavigationItems(
-  navigationItems: NavigationItem[],
-  setMobileMenuOpen?: Dispatch<SetStateAction<boolean>>,
-) {
-  const menuStyles = cn({
-    "block rounded-lg px-3 py-2 text-sm font-medium leading-7 text-foreground hover:bg-accent hover:text-accent-foreground transition-colors":
-      !!setMobileMenuOpen,
-    "text-sm font-normal leading-6 text-foreground duration-300 ease-in-out hover:text-primary transition-colors":
-      !setMobileMenuOpen,
-  });
-
-  return navigationItems.map((item) => {
-    return (
-      <li key={item.name}>
-        <ReactRouterLink
-          to={item.to}
-          className={menuStyles}
-          onClick={setMobileMenuOpen && (() => setMobileMenuOpen(false))}
-          target={item.to.startsWith("http") ? "_blank" : undefined}
-        >
-          {item.name}
-        </ReactRouterLink>
-      </li>
-    );
-  });
-}
-
-const NavLogo = ({ isScrolled }: { isScrolled: boolean }) => (
-  <img
-    className={cn("transition-all duration-500", {
-      "size-8": !isScrolled,
-      "size-7": isScrolled,
-    })}
-    src={logo}
-    alt="Your SaaS App"
-  />
-);
+// Export type for compatibility
+export type NavigationItem = {
+  name: string;
+  to: string;
+};

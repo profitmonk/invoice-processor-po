@@ -31,6 +31,7 @@ import {
 import { Badge } from '../../components/ui/badge';
 import { UserPlus, Mail, Phone, Trash2, Edit, Shield } from 'lucide-react';
 import { Alert, AlertDescription } from '../../components/ui/alert';
+import NavBar from '../../client/components/NavBar/NavBar';
 
 const ROLE_LABELS = {
   USER: 'User',
@@ -103,14 +104,17 @@ export default function UserManagementPage() {
 
   if (isLoading) {
     return (
+      <><NavBar />
       <div className="flex items-center justify-center min-h-screen">
         <p>Loading...</p>
       </div>
+      </>
     );
   }
 
   if (!organization) {
     return (
+      <><NavBar />
       <div className="flex items-center justify-center min-h-screen">
         <Card className="w-96">
           <CardHeader>
@@ -123,10 +127,12 @@ export default function UserManagementPage() {
           </CardContent>
         </Card>
       </div>
+      </>
     );
   }
 
   return (
+      <><NavBar />
     <div className="py-10 lg:mt-10">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="flex items-center justify-between mb-8">
@@ -316,5 +322,6 @@ export default function UserManagementPage() {
         </Card>
       </div>
     </div>
+      </>
   );
 }

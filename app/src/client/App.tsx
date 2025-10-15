@@ -54,7 +54,7 @@ export default function App() {
         ) : (
           <>
             {shouldDisplayAppNavBar && (
-              <NavBar navigationItems={navigationItems} />
+              <NavBar />
             )}
             <div className="mx-auto max-w-screen-2xl">
               <Outlet />

@@ -7,6 +7,7 @@ import { GLAccountsTab } from '../components/config/GLAccountsTab';
 import { ExpenseTypesTab } from '../components/config/ExpenseTypesTab';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Building2, DollarSign, Tag } from 'lucide-react';
+import NavBar from '../../client/components/NavBar/NavBar';
 
 export default function ConfigurationPage() {
   const { data: organization, isLoading } = useQuery(getUserOrganization);
@@ -14,14 +15,17 @@ export default function ConfigurationPage() {
 
   if (isLoading) {
     return (
+    <><NavBar />
       <div className="flex items-center justify-center min-h-screen">
         <p>Loading configuration...</p>
       </div>
+    </>
     );
   }
 
   if (!organization) {
     return (
+    <><NavBar />
       <div className="flex items-center justify-center min-h-screen">
         <Card className="w-96">
           <CardHeader>
@@ -34,10 +38,12 @@ export default function ConfigurationPage() {
           </CardContent>
         </Card>
       </div>
+    </>
     );
   }
 
   return (
+    <><NavBar />
     <div className="py-10 lg:mt-10">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="mb-8">
@@ -77,5 +83,6 @@ export default function ConfigurationPage() {
         </Tabs>
       </div>
     </div>
+    </>
   );
 }
